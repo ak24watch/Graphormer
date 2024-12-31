@@ -2,7 +2,7 @@ from zincdata import ZincDataset
 import dgl
 from phormerModel import Graphormer
 import torch
-
+import torch.nn as nn
 def train_epoch(model, optimizer, data_loader):
     """
     Train the model for one epoch.
@@ -101,6 +101,8 @@ def train_val_pipeline():
         collate_fn=dataset.collate,
         batch_size=256,  # Updated batch size
         shuffle=True,
+        num_workers = 8,
+
     )
 
     val_loader = dgl.dataloading.GraphDataLoader(
@@ -108,6 +110,8 @@ def train_val_pipeline():
         batch_size=256,  # Updated batch size
         shuffle=False,
         collate_fn=dataset.collate,
+        num_workers = 4,
+    
     )
 
     model = Graphormer(
@@ -122,6 +126,8 @@ def train_val_pipeline():
         num_attention_heads=8,
         dropout=0.1,
     )
+
+    model = nn.DataParallel(model)
     optimizer = torch.optim.Adam(
         model.parameters(), 
         lr=2e-4,  # Peak learning rate
