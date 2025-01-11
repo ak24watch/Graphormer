@@ -3,6 +3,8 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 import dgl
 import dgl.data
+from dgl import LapPE
+
 
 class ZincDataset(torch.utils.data.Dataset):
     """
@@ -12,54 +14,51 @@ class ZincDataset(torch.utils.data.Dataset):
     and test splits, and processing the graphs and labels.
 
     Attributes:
-        train (list): List of training samples.
-        val (list): List of validation samples.
-        test (list): List of test samples.
-        max_dist (int): Maximum shortest path distance in the dataset.
-        max_in_degree (int): Maximum in-degree in the dataset.
-        max_out_degree (int): Maximum out-degree in the dataset.
-        max_num_nodes (int): Maximum number of nodes in the dataset.
+        train_samples (list): List of training samples.
+        valid_samples (list): List of validation samples.
+        test_samples (list): List of test samples.
+        cfg (object): Configuration object containing dataset parameters.
     """
-    def __init__(self):
-        train_dataset = dgl.data.ZINCDataset(mode="train")[:256*14]
-        valid_dataset = dgl.data.ZINCDataset(mode="valid")[:256*2]
-        test_dataset = dgl.data.ZINCDataset(mode="test")[:256*2]
 
-        train_samples = [
-            (graph, label) for graph, label in zip(train_dataset[0], train_dataset[1])
+    def __init__(self, cfg):
+        self.cfg = cfg
+        if cfg.eigenvalue:
+            lap_pe_transform = LapPE(cfg.K, "eigenvec", "eigen_value")
+        else:
+            lap_pe_transform = LapPE(cfg.K, "eigenvec")
+        train_dataset = dgl.data.ZINCDataset(mode="train")
+        valid_dataset = dgl.data.ZINCDataset(mode="valid")
+        test_dataset = dgl.data.ZINCDataset(mode="test")
+        train_indices = torch.randperm(len(train_dataset))
+        valid_indices = torch.randperm(len(valid_dataset))
+        test_indices = torch.randperm(len(test_dataset))
+
+        self.train_samples = [
+            train_dataset[i] for i in train_indices[: cfg.num_train_samples]
         ]
-        valid_samples = [
-            (graph, label) for graph, label in zip(valid_dataset[0], valid_dataset[1])
+        self.valid_samples = [
+            valid_dataset[i] for i in valid_indices[: cfg.num_valid_samples]
         ]
-        test_samples = [
-            (graph, label) for graph, label in zip(test_dataset[0], test_dataset[1])
+        self.test_samples = [
+            test_dataset[i] for i in test_indices[: cfg.num_test_samples]
         ]
 
-        self.train = train_samples
-        self.val = valid_samples
-        self.test = test_samples
-        self.max_dist = 0
-        self.max_in_degree = 0
-        self.max_out_degree = 0
-        self.max_num_nodes = 0
+        for graph_set in [self.train_samples, self.valid_samples, self.test_samples]:
+            for graph, _ in graph_set:
+                # print(_)
+            
+                if cfg.edge_encoding:
+                    
+                    graph.ndata["spd"], graph.ndata["path"] = dgl.shortest_dist(
+                        graph, return_paths=True
+                    )
+                else:
+                    graph.ndata["spd"] = dgl.shortest_dist(graph)
 
-        for dataset in [train_samples, valid_samples, test_samples]:
-            for g, labels in dataset:
-                spd, path = dgl.shortest_dist(g, return_paths=True)
-                g.ndata["spd"] = spd
-                g.ndata["path"] = path
-                dist_maxi = torch.max(spd).item()
-                if dist_maxi > self.max_dist:
-                    self.max_dist = dist_maxi
-                in_degree_maxi = torch.max(g.in_degrees()).item()
-                if in_degree_maxi > self.max_in_degree:
-                    self.max_in_degree = in_degree_maxi
-                out_degree_maxi = torch.max(g.out_degrees()).item()
-                if out_degree_maxi > self.max_out_degree:
-                    self.max_out_degree = out_degree_maxi
-                max_nodes = g.num_nodes()
-                if max_nodes > self.max_num_nodes:
-                    self.max_num_nodes = max_nodes
+                lap_pe_transform(graph)  # [ N, K]
+
+                graph.ndata["feat"] = graph.ndata["feat"].to(torch.long)
+                graph.edata["feat"] = graph.edata["feat"].to(torch.long)
 
     def collate(self, samples):
         """
@@ -77,60 +76,89 @@ class ZincDataset(torch.utils.data.Dataset):
         num_nodes = [g.num_nodes() for g in graphs]
         max_num_nodes = max(num_nodes)
 
-        attn_mask = torch.zeros(num_graphs, max_num_nodes + 1, max_num_nodes + 1)
+        attn_mask = torch.ones(num_graphs, max_num_nodes + 1, max_num_nodes + 1)
 
-        node_feat = []
-        in_degree, out_degree = [], []
-        path_data = []
+        node_feat_list = []
+        if self.cfg.deg_emb:
+            in_degree_list, out_degree_list = [], []
+        if self.cfg.edge_encoding:
+            path_edata_list = []
+        eigen_vecs_list = []
+        if self.cfg.eigenvalue:
+            eigen_value_list = []
 
         dist = -torch.ones((num_graphs, max_num_nodes, max_num_nodes), dtype=torch.long)
 
         for i in range(num_graphs):
-            attn_mask[i, :, num_nodes[i] + 1 :] = 1
-            attn_mask[i, num_nodes[i] + 1 :, :] = 1
+            attn_mask[i, : num_nodes[i] + 1, : num_nodes[i] + 1] = 0
+            node_feat = graphs[i].ndata["feat"] + 1
+            if len(node_feat.shape) == 1:
+                node_feat = node_feat.unsqueeze(1)
+            node_feat_list.append(node_feat)
 
-            nd_feat = graphs[i].ndata["feat"] + 1
-            if len(nd_feat.shape) == 1:
-                nd_feat = nd_feat.unsqueeze(1)
-            node_feat.append(nd_feat)
+            if self.cfg.deg_emb:
+                in_degree_list.append(graphs[i].in_degrees() + 1)
+                out_degree_list.append(graphs[i].out_degrees() + 1)
 
-            in_degree.append(
-                torch.clamp(graphs[i].in_degrees() + 1, min=0, max=self.max_in_degree)
-            )
-            out_degree.append(
-                torch.clamp(graphs[i].out_degrees() + 1, min=0, max=self.max_out_degree)
-            )
+            if self.cfg.edge_encoding:
+                path = graphs[i].ndata["path"]
+                path_len = path.size(dim=2)
 
-            path = graphs[i].ndata["path"]
-            path_len = path.size(dim=2)
-            max_len = self.max_dist
-            if (path_len >= max_len):
-                shortest_path = path[:, :, :max_len]
-            else:
-                p1d = (0, max_len - path_len)
-                shortest_path = F.pad(path, p1d, "constant", -1)
-            pad_num_nodes = max_num_nodes - num_nodes[i]
-            p3d = (0, 0, 0, pad_num_nodes, 0, pad_num_nodes)
-            shortest_path = F.pad(shortest_path, p3d, "constant", -1)
+                if path_len >= self.cfg.max_path_length:
+                    path = path[:, :, : self.cfg.max_path_length]
+                else:
+                    p1d = (0, self.cfg.max_path_length - path_len)
+                    path = F.pad(path, p1d, "constant", -1)
+                pad_num_nodes = max_num_nodes - num_nodes[i]
+                p3d = (0, 0, 0, pad_num_nodes, 0, pad_num_nodes)
+                path = F.pad(path, p3d, "constant", -1)
 
-            edata = graphs[i].edata["feat"] + 1
-            if len(edata.shape) == 1:
-                edata = edata.unsqueeze(-1)
-            edata = torch.cat((edata, torch.zeros(1, edata.shape[1])), dim=0)
-            path_data.append(edata[shortest_path])
+                edata = (
+                    graphs[i].edata["feat"] + 1
+                )  # because to  padding non existent edges
+                if len(edata.shape) == 1:
+                    edata = edata.unsqueeze(-1)
+                edata = torch.cat(
+                    (edata, torch.zeros((1, edata.shape[1]), dtype=torch.long)), dim=0
+                )  # non existing edges type 0
+                path_edata = edata[
+                    path
+                ]  # [batch, num_nodes, num_nodes, max_path_length, edge_type]
+                path_edata_list.append(path_edata)
 
             dist[i, : num_nodes[i], : num_nodes[i]] = graphs[i].ndata["spd"]
 
-        node_feat = pad_sequence(node_feat, batch_first=True)
-        in_degree = pad_sequence(in_degree, batch_first=True)
-        out_degree = pad_sequence(out_degree, batch_first=True)
+            if self.cfg.eigenvalue:
+                eigen, eigen_value = (
+                    graphs[i].ndata["eigenvec"],
+                    graphs[i].ndata["eigen_value"],
+                )
+                eigen_vecs_list.append(eigen)
+                eigen_value_list.append(eigen_value)
+
+            else:
+                eigen = graphs[i].ndata["eigenvec"]
+                eigen_vecs_list.append(eigen)
+
+        batched_node_feat = pad_sequence(node_feat_list, batch_first=True)
+        if self.cfg.deg_emb:
+            batched_indegree = pad_sequence(in_degree_list, batch_first=True)
+            batched_outdegree = pad_sequence(out_degree_list, batch_first=True)
+
+        batched_eigen_vecs = pad_sequence(eigen_vecs_list, batch_first=True)
+        if self.cfg.eigenvalue:
+            batched_eigen_value = pad_sequence(
+                eigen_value_list, batch_first=True
+            )  # [batch, max_num_nodes, K]
 
         return (
             torch.stack(labels).reshape(num_graphs, -1),
             attn_mask,
-            node_feat,
-            in_degree,
-            out_degree,
-            torch.stack(path_data),
+            batched_node_feat,
+            batched_eigen_vecs,
+            batched_eigen_value if self.cfg.eigenvalue else None,
+            batched_indegree if self.cfg.deg_emb else None,
+            batched_outdegree if self.cfg.deg_emb else None,
+            torch.stack(path_edata_list) if self.cfg.edge_encoding else None,
             dist,
         )

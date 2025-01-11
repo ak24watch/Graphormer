@@ -9,11 +9,10 @@ class SpatialEncoder(nn.Module):
         max_dist (int): Maximum distance for the shortest path.
         num_heads (int): Number of attention heads.
     """
-    def __init__(self, max_dist, num_heads=1):
+    def __init__(self, cfg):
         super().__init__()
-        self.max_dist = max_dist
-        self.num_heads = num_heads
-        self.embedding_table = nn.Embedding(max_dist + 2, num_heads, padding_idx=0)
+        self.cfg = cfg
+        self.embedding_table = nn.Embedding(cfg.max_num_nodes + 2, cfg.n_heads, padding_idx=0)
 
     def forward(self, dist):
         """
@@ -29,7 +28,7 @@ class SpatialEncoder(nn.Module):
             th.clamp(
                 dist,
                 min=-1,
-                max=self.max_dist,
+                max=self.cfg.max_dist,
             )
             + 1
         )

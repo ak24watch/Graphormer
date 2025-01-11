@@ -3,6 +3,12 @@ import dgl
 from phormerModel import Graphormer
 import torch
 import torch.nn as nn
+from configuration import Config
+
+from tqdm import tqdm
+
+
+
 def train_epoch(model, optimizer, data_loader):
     """
     Train the model for one epoch.
@@ -22,11 +28,13 @@ def train_epoch(model, optimizer, data_loader):
         batch_labels,
         attn_mask,
         node_feat,
+        eigen_vecs,
+        eigen_values,
         in_degree,
         out_degree,
         path_data,
         dist,
-    ) in data_loader:
+    ) in tqdm(data_loader, desc="Training"):
         optimizer.zero_grad()
         batch_scores = model(
             node_feat,
@@ -34,6 +42,8 @@ def train_epoch(model, optimizer, data_loader):
             out_degree,
             path_data,
             dist,
+            eigen_vecs,
+            eigen_values,
             attn_mask=attn_mask,
         )
         absolute_error = torch.abs(batch_scores - batch_labels)
@@ -45,6 +55,7 @@ def train_epoch(model, optimizer, data_loader):
 
     epoch_loss /= len(data_loader)
     return epoch_loss
+
 
 def evaluate_network(model, data_loader):
     """
@@ -63,17 +74,21 @@ def evaluate_network(model, data_loader):
         batch_labels,
         attn_mask,
         node_feat,
+        eigen_vecs,
+        eigen_values,
         in_degree,
         out_degree,
         path_data,
         dist,
-    ) in data_loader:
+    ) in tqdm(data_loader, desc="evaluate"):
         batch_scores = model(
             node_feat,
             in_degree,
             out_degree,
             path_data,
             dist,
+            eigen_vecs,
+            eigen_values,
             attn_mask=attn_mask,
         )
         absolute_error = torch.abs(batch_scores - batch_labels)
@@ -82,6 +97,7 @@ def evaluate_network(model, data_loader):
     epoch_loss /= len(data_loader)
     return epoch_loss
 
+
 def train_val_pipeline():
     """
     Train and validate the model.
@@ -89,51 +105,38 @@ def train_val_pipeline():
     This function initializes the dataset, creates data loaders for training and validation,
     initializes the model and optimizer, and trains the model for a specified number of epochs.
     """
-    dataset = ZincDataset()
+    cfg = Config()
+    dataset = ZincDataset(cfg=cfg)
 
-    print(
-        f"train, test, val sizes: {len(dataset.train)}, "
-        f"{len(dataset.test)}, {len(dataset.val)}."
-    )
+    print(f"Number of training samples: {len(dataset.train_samples)}")
+    print(f"Number of validation samples: {len(dataset.valid_samples)}")
+    print(f"Number of test samples: {len(dataset.test_samples)}")
 
     train_loader = dgl.dataloading.GraphDataLoader(
-        dataset=dataset.train,
+        dataset=dataset.train_samples,
         collate_fn=dataset.collate,
-        batch_size=256,  # Updated batch size
+        batch_size=cfg.train_batch_size,  # Updated batch size
         shuffle=True,
-        num_workers = 8,
-
+        num_workers=4,
     )
 
-    val_loader = dgl.dataloading.GraphDataLoader(
-        dataset.val,
-        batch_size=256,  # Updated batch size
+    valid_loader = dgl.dataloading.GraphDataLoader(
+        dataset.valid_samples,
+        batch_size=cfg.valid_batch_size,  # Updated batch size
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers = 4,
-    
+        num_workers=4,
     )
 
-    model = Graphormer(
-        num_atoms=dataset.max_num_nodes,
-        max_in_degree=dataset.max_in_degree,
-        max_out_degree=dataset.max_out_degree,
-        num_spatial=dataset.max_dist,
-        multi_hop_max_dist=dataset.max_dist,
-        num_encoder_layers=12,
-        embedding_dim=80,
-        ffn_embedding_dim=80,
-        num_attention_heads=8,
-        dropout=0.1,
-    )
-
+    model = Graphormer(cfg)
     model = nn.DataParallel(model)
+
     optimizer = torch.optim.Adam(
-        model.parameters(), 
-        lr=2e-4,  # Peak learning rate
-        eps=1e-8, 
-        weight_decay=0.01, 
-        betas=(0.9, 0.999)
+        model.parameters(),
+        lr=cfg.lr,
+        eps=cfg.eps,
+        weight_decay=cfg.weight_decay,
+        betas=cfg.betas,
     )
 
     for epoch in range(10000):  # Max epochs
@@ -142,11 +145,13 @@ def train_val_pipeline():
             optimizer,
             train_loader,
         )
-        epoch_val_loss = evaluate_network(model, val_loader)
+        epoch_val_loss = evaluate_network(model, valid_loader)
 
         print(
             f"Epoch={epoch + 1} | train_loss={epoch_train_loss:.3f} | val_loss={epoch_val_loss:.3f}"
         )
+    torch.save(model.state_dict(), "model.pth")
+
 
 if __name__ == "__main__":
     train_val_pipeline()

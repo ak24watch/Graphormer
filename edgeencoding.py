@@ -1,5 +1,8 @@
-import torch as th
+import torch
 import torch.nn as nn
+from fancy_einsum import einsum
+import einops
+
 
 class EdgeEncoder(nn.Module):
     """
@@ -10,32 +13,41 @@ class EdgeEncoder(nn.Module):
         feat_dim (int): Dimension of the edge features.
         num_heads (int): Number of attention heads.
     """
-    def __init__(self, max_len, feat_dim, num_heads=1):
+
+    def __init__(self, cfg):
         super().__init__()
-        self.max_len = max_len
-        self.feat_dim = feat_dim
-        self.num_heads = num_heads
-        self.embedding_table = nn.Embedding(max_len * num_heads, feat_dim)
+        self.cfg = cfg
+
+        self.embedding_table = nn.Embedding(
+            cfg.max_path_length * cfg.n_heads, cfg.d_model
+        )
 
     def forward(self, dist, path_data):
         """
         Forward pass for the edge encoder.
 
         Args:
-            dist (Tensor): Shortest path distance tensor.
-            path_data (Tensor): Edge feature tensor along the shortest path.
+            dist (Tensor): [batch_size, num_nodes, num_nodes]=> Shortest path distance tensor.
+            path_data (Tensor): [batch_size, num_nodes, num_nodes, max_path_length, edge_dim]=> Edge feature tensor along the shortest path.
+
 
         Returns:
             Tensor: Path encoding tensor.
         """
-        shortest_distance = th.clamp(dist, min=1, max=self.max_len)
-        edge_embedding = self.embedding_table.weight.reshape(
-            self.max_len, self.num_heads, -1
+        shortest_distance = torch.clamp(dist, min=1, max=self.cfg.max_path_length)
+        shortest_distance = shortest_distance.unsqueeze(-1) # [batch_size, num_nodes, num_nodes, 1]
+        path_dim = self.cfg.max_path_length
+        n_heads = self.cfg.n_heads
+        edge_embedding = einops.rearrange(
+            self.embedding_table.weight,
+            "(path_dim n_heads) edge_dim -> path_dim n_heads edge_dim",
+            path_dim=path_dim, n_heads=n_heads
         )
-        path_encoding = th.div(
-            th.einsum("bxyld,lhd->bxyh", path_data, edge_embedding).permute(
-                3, 0, 1, 2
-            ),
-            shortest_distance,
-        ).permute(1, 2, 3, 0)
-        return path_encoding
+
+        path_encodeing = einsum(
+            "batch pos1 pos2 path_dim edge_dim, path_dim n_heads edge_dim -> batch pos1 pos2 n_heads",
+            path_data,
+            edge_embedding,
+        )
+        avg_path_encoding = torch.div(path_encodeing, shortest_distance)
+        return avg_path_encoding
