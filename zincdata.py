@@ -5,7 +5,6 @@ import dgl
 import dgl.data
 from dgl import LapPE
 
-
 class ZincDataset(torch.utils.data.Dataset):
     """
     ZincDataset class for loading and processing the ZINC dataset.
@@ -45,17 +44,14 @@ class ZincDataset(torch.utils.data.Dataset):
 
         for graph_set in [self.train_samples, self.valid_samples, self.test_samples]:
             for graph, _ in graph_set:
-                # print(_)
-            
                 if cfg.edge_encoding:
-                    
                     graph.ndata["spd"], graph.ndata["path"] = dgl.shortest_dist(
                         graph, return_paths=True
                     )
                 else:
                     graph.ndata["spd"] = dgl.shortest_dist(graph)
 
-                lap_pe_transform(graph)  # [ N, K]
+                lap_pe_transform(graph)
 
                 graph.ndata["feat"] = graph.ndata["feat"].to(torch.long)
                 graph.edata["feat"] = graph.edata["feat"].to(torch.long)
@@ -113,17 +109,15 @@ class ZincDataset(torch.utils.data.Dataset):
                 p3d = (0, 0, 0, pad_num_nodes, 0, pad_num_nodes)
                 path = F.pad(path, p3d, "constant", -1)
 
-                edata = (
-                    graphs[i].edata["feat"] + 1
-                )  # because to  padding non existent edges
+                edata = graphs[i].edata["feat"] + 1
                 if len(edata.shape) == 1:
                     edata = edata.unsqueeze(-1)
                 edata = torch.cat(
                     (edata, torch.zeros((1, edata.shape[1]), dtype=torch.long)), dim=0
-                )  # non existing edges type 0
+                )
                 path_edata = edata[
                     path
-                ]  # [batch, num_nodes, num_nodes, max_path_length, edge_type]
+                ]
                 path_edata_list.append(path_edata)
 
             dist[i, : num_nodes[i], : num_nodes[i]] = graphs[i].ndata["spd"]
@@ -149,7 +143,7 @@ class ZincDataset(torch.utils.data.Dataset):
         if self.cfg.eigenvalue:
             batched_eigen_value = pad_sequence(
                 eigen_value_list, batch_first=True
-            )  # [batch, max_num_nodes, K]
+            )
 
         return (
             torch.stack(labels).reshape(num_graphs, -1),

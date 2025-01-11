@@ -4,10 +4,7 @@ from phormerModel import Graphormer
 import torch
 import torch.nn as nn
 from configuration import Config
-
 from tqdm import tqdm
-
-
 
 def train_epoch(model, optimizer, data_loader):
     """
@@ -49,13 +46,12 @@ def train_epoch(model, optimizer, data_loader):
         absolute_error = torch.abs(batch_scores - batch_labels)
         loss = torch.mean(absolute_error)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)  # Gradient clipping
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
         optimizer.step()
         epoch_loss += loss.item()
 
     epoch_loss /= len(data_loader)
     return epoch_loss
-
 
 def evaluate_network(model, data_loader):
     """
@@ -97,7 +93,6 @@ def evaluate_network(model, data_loader):
     epoch_loss /= len(data_loader)
     return epoch_loss
 
-
 def train_val_pipeline():
     """
     Train and validate the model.
@@ -115,14 +110,14 @@ def train_val_pipeline():
     train_loader = dgl.dataloading.GraphDataLoader(
         dataset=dataset.train_samples,
         collate_fn=dataset.collate,
-        batch_size=cfg.train_batch_size,  # Updated batch size
+        batch_size=cfg.train_batch_size,
         shuffle=True,
         num_workers=4,
     )
 
     valid_loader = dgl.dataloading.GraphDataLoader(
         dataset.valid_samples,
-        batch_size=cfg.valid_batch_size,  # Updated batch size
+        batch_size=cfg.valid_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
         num_workers=4,
@@ -139,7 +134,7 @@ def train_val_pipeline():
         betas=cfg.betas,
     )
 
-    for epoch in range(10000):  # Max epochs
+    for epoch in range(10000):
         epoch_train_loss = train_epoch(
             model,
             optimizer,
@@ -151,7 +146,6 @@ def train_val_pipeline():
             f"Epoch={epoch + 1} | train_loss={epoch_train_loss:.3f} | val_loss={epoch_val_loss:.3f}"
         )
     torch.save(model.state_dict(), "model.pth")
-
 
 if __name__ == "__main__":
     train_val_pipeline()

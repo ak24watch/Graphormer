@@ -1,20 +1,15 @@
 import torch
 import torch.nn as nn
 
-
 class FeedForwardNetwork(nn.Module):
     """
     Feed Forward Network used in the encoder.
 
     Args:
-        hidden_size (int): Size of the hidden layer.
-        ffn_size (int): Size of the feed-forward layer.
-        encoder_droput (float): Dropout rate.
+        cfg (object): Configuration object containing model parameters.
     """
-
-    def __init__(self, cfg):  # corrected typo here
+    def __init__(self, cfg):
         super(FeedForwardNetwork, self).__init__()
-
         self.layer1 = nn.Linear(
             cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model, cfg.d_ffn
         )
@@ -22,7 +17,7 @@ class FeedForwardNetwork(nn.Module):
         self.layer2 = nn.Linear(
             cfg.d_ffn, cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model
         )
-        self.fnn_dropout = nn.Dropout(cfg.ffn_dropout)  # corrected typo here
+        self.fnn_dropout = nn.Dropout(cfg.ffn_dropout)
 
     def forward(self, x):
         """
@@ -40,17 +35,13 @@ class FeedForwardNetwork(nn.Module):
         x = self.fnn_dropout(x)
         return x
 
-
 class Attention(nn.Module):
     """
     Multi-head Attention mechanism.
 
     Args:
-        hidden_size (int): Size of the hidden layer.
-        attention_drop (float): Dropout rate for attention.
-        num_heads (int): Number of attention heads.
+        cfg (object): Configuration object containing model parameters.
     """
-
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
@@ -105,7 +96,6 @@ class Attention(nn.Module):
             scores = scores + att_bias
         if mask is not None:
             mask = mask.unsqueeze(1)
-            # mask = mask.repeat(1, self.num_heads, 1, 1)
             scores = scores.masked_fill(mask.to(torch.bool), float(10e-5))
         attention_weights = torch.softmax(scores, dim=-1)
         attention_weights = self.att_dropout(attention_weights)
@@ -115,18 +105,13 @@ class Attention(nn.Module):
         output = self.output_layer(output)
         return output
 
-
 class Encoder(nn.Module):
     """
     Encoder layer consisting of multi-head attention and feed-forward network.
 
     Args:
-        hidden_size (int): Size of the hidden layer.
-        ffn_out_size (int): Size of the feed-forward layer.
-        attention_dropout (float): Dropout rate for attention.
-        num_heads (int): Number of attention heads.
+        cfg (object): Configuration object containing model parameters.
     """
-
     def __init__(self, cfg):
         super().__init__()
         self.self_att_norm = nn.LayerNorm(
@@ -143,7 +128,7 @@ class Encoder(nn.Module):
         Forward pass for the encoder layer.
 
         Args:
-            x (Tensor): Input tensor.
+            residual_pre (Tensor): Input tensor.
             att_bias (Tensor, optional): Attention bias tensor.
             att_mask (Tensor, optional): Attention mask tensor.
 

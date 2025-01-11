@@ -3,21 +3,16 @@ import torch.nn as nn
 from fancy_einsum import einsum
 import einops
 
-
 class EdgeEncoder(nn.Module):
     """
     Edge Encoder for encoding edge features along the shortest path.
 
     Args:
-        max_len (int): Maximum length of the shortest path.
-        feat_dim (int): Dimension of the edge features.
-        num_heads (int): Number of attention heads.
+        cfg (object): Configuration object containing model parameters.
     """
-
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
-
         self.embedding_table = nn.Embedding(
             cfg.max_path_length * cfg.n_heads, cfg.d_model
         )
@@ -27,15 +22,14 @@ class EdgeEncoder(nn.Module):
         Forward pass for the edge encoder.
 
         Args:
-            dist (Tensor): [batch_size, num_nodes, num_nodes]=> Shortest path distance tensor.
-            path_data (Tensor): [batch_size, num_nodes, num_nodes, max_path_length, edge_dim]=> Edge feature tensor along the shortest path.
-
+            dist (Tensor): Shortest path distance tensor.
+            path_data (Tensor): Edge feature tensor along the shortest path.
 
         Returns:
             Tensor: Path encoding tensor.
         """
         shortest_distance = torch.clamp(dist, min=1, max=self.cfg.max_path_length)
-        shortest_distance = shortest_distance.unsqueeze(-1) # [batch_size, num_nodes, num_nodes, 1]
+        shortest_distance = shortest_distance.unsqueeze(-1)
         path_dim = self.cfg.max_path_length
         n_heads = self.cfg.n_heads
         edge_embedding = einops.rearrange(
