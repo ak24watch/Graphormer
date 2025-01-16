@@ -70,16 +70,16 @@ class Config:
     num_bond_types: int = 4
     num_atom_types: int = 28
     max_num_nodes: int = 37
-    max_degrees: int = 10
-    max_path_length: int = 5
+    max_degrees: int = 8
+    max_path_length: int = 8
     max_dist: int = 8
 
-    train_batch_size: int = 256 * 2
+    train_batch_size: int = 256 * 3
     valid_batch_size: int = 256
     test_batch_size: int = 256
 
     eps: float = 1e-8
-    lr: float = 2e-3
+    lr: float = 2e-4
     betas: tuple = (0.9, 0.999)
     weight_decay: float = 0
     num_train_samples: int = 10000
