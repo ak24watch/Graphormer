@@ -27,7 +27,7 @@ class Graphormer(nn.Module):
                 cfg.num_bond_types + 1, cfg.d_model, padding_idx=0
             )
         self.graph_node_enoceder = nn.Embedding(
-            1, (2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model)
+            1,2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
 
         self.degree_encoder = CentralityEncoder(cfg)
@@ -36,21 +36,21 @@ class Graphormer(nn.Module):
         self.spatial_encoder = SpatialEncoder(cfg)
         self.graph_node_virtual_distance_encoder = nn.Embedding(1, cfg.n_heads)
         self.emb_layer_norm = nn.LayerNorm(
-            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model
+           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
 
         self.layers = nn.ModuleList([Encoder(cfg) for _ in range(cfg.n_layers)])
         self.lm_head_transform_weight = nn.Linear(
-            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
-            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             bias=False,
         )
         self.layer_norm = nn.LayerNorm(
-            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model
+           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
 
         self.embed_out = nn.Linear(
-            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             cfg.regression_output_dim,
             bias=False,
         )

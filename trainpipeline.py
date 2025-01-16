@@ -112,7 +112,7 @@ def train_val_pipeline():
         collate_fn=dataset.collate,
         batch_size=cfg.train_batch_size,
         shuffle=True,
-        num_workers=4,
+        num_workers=0,
     )
 
     valid_loader = dgl.dataloading.GraphDataLoader(
@@ -120,12 +120,12 @@ def train_val_pipeline():
         batch_size=cfg.valid_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers=4,
+        num_workers=0,
     )
 
     model = Graphormer(cfg)
     model = nn.DataParallel(model)
-    sheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
+
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.lr,
