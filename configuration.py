@@ -61,18 +61,18 @@ class Config:
     rho_num_layers: int = 2
     max_eigen_value: int = -1
     eigenvalue: bool = False
-    pos_emb: bool = True
+    pos_emb: bool = False
 
   
-    add_pos_emb: bool = False
+    concat_pos_emb: bool = False
     deg_emb: bool = True
     regression_output_dim: int = 1
     num_bond_types: int = 4
     num_atom_types: int = 28
     max_num_nodes: int = 37
-    max_degrees: int = 10
-    max_path_length: int = 5
-    max_dist: int = 8
+    max_degrees: int = 20
+    max_path_length: int = 8
+    max_dist: int = 10
 
     train_batch_size: int = 256 * 2
     valid_batch_size: int = 256
@@ -82,7 +82,7 @@ class Config:
     lr: float = 2e-3
     betas: tuple = (0.9, 0.999)
     weight_decay: float = 0
-    num_train_samples: int = 100
+    num_train_samples: int = 2000
     num_valid_samples: int = 100
     num_test_samples: int = 100
     out_activation: nn.Module = nn.ReLU()

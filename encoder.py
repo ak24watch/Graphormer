@@ -11,11 +11,11 @@ class FeedForwardNetwork(nn.Module):
     def __init__(self, cfg):
         super(FeedForwardNetwork, self).__init__()
         self.layer1 = nn.Linear(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model, cfg.d_ffn
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model, cfg.d_ffn
         )
         self.gelu = cfg.ffn_activation
         self.layer2 = nn.Linear(
-            cfg.d_ffn, cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model
+            cfg.d_ffn, 2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
         self.fnn_dropout = nn.Dropout(cfg.ffn_dropout)
 
@@ -47,21 +47,21 @@ class Attention(nn.Module):
         self.cfg = cfg
         self.scale = cfg.d_head**-0.5
         self.linear_q = nn.Linear(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model,
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             cfg.n_heads * cfg.d_head,
         )
         self.linear_k = nn.Linear(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model,
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             cfg.n_heads * cfg.d_head,
         )
         self.linear_v = nn.Linear(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model,
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             cfg.n_heads * cfg.d_head,
         )
         self.att_dropout = nn.Dropout(cfg.attention_dropout)
         self.output_layer = nn.Linear(
             cfg.n_heads * cfg.d_head,
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model,
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
         )
 
     def forward(self, h, att_bias=None, mask=None):
@@ -115,11 +115,11 @@ class Encoder(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.self_att_norm = nn.LayerNorm(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
         self.self_att = Attention(cfg)
         self.ffn_norm = nn.LayerNorm(
-            cfg.d_model if cfg.add_pos_emb else 2 * cfg.d_model
+            2* cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
         self.ffn = FeedForwardNetwork(cfg)
 

@@ -125,7 +125,7 @@ def train_val_pipeline():
 
     model = Graphormer(cfg)
     model = nn.DataParallel(model)
-
+    sheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.lr,
