@@ -2,7 +2,7 @@ from zincdata import ZincDataset
 import dgl
 from phormerModel import Graphormer
 import torch
-import torch.nn as nn
+
 from configuration import Config
 from tqdm import tqdm
 import plotly.graph_objects as go
@@ -94,7 +94,7 @@ def evaluate_network(model, data_loader):
     epoch_loss /= len(data_loader)
     return epoch_loss
 
-def evaluate_test_accuracy(model, data_loader):
+def evaluate_test_loss(model, data_loader):
     """
     Evaluate the model on the test data.
 
@@ -103,11 +103,10 @@ def evaluate_test_accuracy(model, data_loader):
         data_loader: The data loader providing the test data.
 
     Returns:
-        The average accuracy for the test data.
+        The average loss for the test data.
     """
     model.eval()
-    correct = 0
-    total = 0
+    epoch_loss = 0
     with torch.no_grad():
         for (
             batch_labels,
@@ -130,26 +129,25 @@ def evaluate_test_accuracy(model, data_loader):
                 eigen_values,
                 attn_mask=attn_mask,
             )
-            predicted = torch.round(batch_scores)
-            total += batch_labels.size(0)
-            correct += (predicted == batch_labels).sum().item()
-    return correct / total
+            absolute_error = torch.abs(batch_scores - batch_labels)
+            loss = torch.mean(absolute_error)
+            epoch_loss += loss.item()
+    epoch_loss /= len(data_loader)
+    return epoch_loss
 
-def plot_accuracies(train_accuracies, val_accuracies, test_accuracy):
+def plot_losses(train_losses, val_losses):
     """
-    Plot training, validation, and test accuracies.
+    Plot training and validation losses.
 
     Args:
-        train_accuracies: List of training accuracies.
-        val_accuracies: List of validation accuracies.
-        test_accuracy: Test accuracy.
+        train_losses: List of training losses.
+        val_losses: List of validation losses.
     """
     fig = go.Figure()
-    fig.add_trace(go.Scatter(y=train_accuracies, mode='lines', name='Training Accuracy'))
-    fig.add_trace(go.Scatter(y=val_accuracies, mode='lines', name='Validation Accuracy'))
-    fig.add_trace(go.Scatter(y=[test_accuracy] * len(train_accuracies), mode='lines', name='Test Accuracy'))
-    fig.update_layout(title='Training, Validation, and Test Accuracy', xaxis_title='Epoch', yaxis_title='Accuracy')
-    fig.write_image("accuracies_plot.png")
+    fig.add_trace(go.Scatter(y=train_losses, mode='lines', name='Training Loss'))
+    fig.add_trace(go.Scatter(y=val_losses, mode='lines', name='Validation Loss'))
+    fig.update_layout(title='Training and Validation Loss', xaxis_title='Epoch', yaxis_title='Loss')
+    fig.write_image("losses_plot.png")
 
 def train_val_pipeline():
     """
@@ -200,8 +198,8 @@ def train_val_pipeline():
         betas=cfg.betas,
     )
 
-    train_accuracies = []
-    val_accuracies = []
+    train_losses = []
+    val_losses = []
 
     for epoch in range(300):
         epoch_train_loss = train_epoch(
@@ -211,20 +209,18 @@ def train_val_pipeline():
         )
         epoch_val_loss = evaluate_network(model, valid_loader)
 
-        train_accuracies.append(1 - epoch_train_loss)
-        val_accuracies.append(1 - epoch_val_loss)
+        train_losses.append(epoch_train_loss)
+        val_losses.append(epoch_val_loss)
 
         print(
             f"Epoch={epoch + 1} | train_loss={epoch_train_loss:.3f} | val_loss={epoch_val_loss:.3f}"
         )
     torch.save(model.state_dict(), "model.pth")
-    test_accuracy = evaluate_test_accuracy(model, test_loader)
+    test_loss = evaluate_test_loss(model, test_loader)
 
-    plot_accuracies(train_accuracies, val_accuracies, test_accuracy)
+    plot_losses(train_losses, val_losses)
 
-    print(f"Test Accuracy: {test_accuracy:.3f}")
-
-    
+    print(f"Test Loss: {test_loss:.3f}")
 
 if __name__ == "__main__":
     
