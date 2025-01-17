@@ -10,8 +10,10 @@ The model is based on the papers "Do Transformers Really Perform Bad for Graph R
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Components](#components)
+- [Model Architecture](#model-architecture)
 - [Training](#training)
 - [Plotting](#plotting)
+- [Plots](#plots)
 - [License](#license)
 
 ## Installation
@@ -78,6 +80,26 @@ Encodes edge features along the shortest path.
 
 Consists of multi-head attention and feed-forward network layers.
 
+### SignNet 
+
+SignNet is a new neural architectures that is invariant to key symmetries displayed by eigenvectors: (i) sign flips, since if v is an eigenvector then so is −v.
+
+## Model Architecture
+
+The Graphormer model consists of several key components:
+
+- **Atom Encoder**: Embeds node features.
+- **Bond Encoder**: Embeds edge features (if edge encoding is enabled).
+- **Centrality Encoder**: Encodes node centrality features based on in-degrees and out-degrees.
+- **Spatial Encoder**: Encodes shortest path distances.
+- **Signet**: Encodes eigenvectors and eigenvalues.
+- **Encoder Layers**: Stacked layers of multi-head attention and feed-forward networks.
+- **Output Layer**: Produces the final graph representation.
+
+The model takes various graph features as input and processes them through these components to generate a graph representation.
+
+![Model Architecture](model_arc.png)
+
 ## Training
 
 To train the Graphormer model, you need to prepare your dataset and define the training loop. Below is a simplified example:
@@ -120,6 +142,22 @@ You can visualize the eigenvectors of a graph using the `plot_eigenvector.py` sc
 ```bash
 python plot_eigenvector.py
 ```
+
+## Plots
+
+### Eigenvector Plot
+
+The `plot_eigenvector.py` script allows you to visualize the eigenvectors of a graph. It generates an interactive plot using Plotly, showing both nodes and edges of the graph with node colors representing eigenvector values.
+
+To run the script and generate the plot, use the following command:
+
+```bash
+python plot_eigenvector.py
+```
+
+The plot will be displayed interactively and saved as a static image named `eigenvector_plot.png`.
+
+![Eigenvector Plot](eigenvector_plot.png)
 
 ## License
 
