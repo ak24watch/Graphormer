@@ -64,10 +64,6 @@ print(cfg)
 
 Encodes shortest path distances using an embedding table.
 
-### Signet
-
-Encodes eigenvectors and eigenvalues using a series of linear layers.
-
 ### Centrality Encoder
 
 Encodes node centrality features based on in-degrees and out-degrees.
@@ -83,6 +79,7 @@ Consists of multi-head attention and feed-forward network layers.
 ### SignNet 
 
 SignNet is a new neural architectures that is invariant to key symmetries displayed by eigenvectors: (i) sign flips, since if v is an eigenvector then so is −v.
+Encodes eigenvectors and eigenvalues using a series of linear layers.
 
 ## Model Architecture
 
