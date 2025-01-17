@@ -1,4 +1,4 @@
-# Graphormer
+# Sign Invariant Positional Encoded Graphormer
 
 Graphormer is a graph representation learning model designed to encode various graph features, including node centrality, shortest path distances, and eigenvectors/eigenvalues. This repository contains the implementation of the Graphormer model and its components.
 
