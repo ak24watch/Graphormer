@@ -170,7 +170,7 @@ def train_val_pipeline():
         collate_fn=dataset.collate,
         batch_size=cfg.train_batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=8,
     )
 
     valid_loader = dgl.dataloading.GraphDataLoader(
@@ -178,7 +178,7 @@ def train_val_pipeline():
         batch_size=cfg.valid_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers=0,
+        num_workers=8,
     )
 
     test_loader = dgl.dataloading.GraphDataLoader(
@@ -186,11 +186,11 @@ def train_val_pipeline():
         batch_size=cfg.test_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers=0,
+        num_workers=8,
     )
 
     model = Graphormer(cfg)
-    model = nn.DataParallel(model)
+  
 
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -217,13 +217,15 @@ def train_val_pipeline():
         print(
             f"Epoch={epoch + 1} | train_loss={epoch_train_loss:.3f} | val_loss={epoch_val_loss:.3f}"
         )
-
+    torch.save(model.state_dict(), "model.pth")
     test_accuracy = evaluate_test_accuracy(model, test_loader)
+
     plot_accuracies(train_accuracies, val_accuracies, test_accuracy)
 
     print(f"Test Accuracy: {test_accuracy:.3f}")
 
-    torch.save(model.state_dict(), "model.pth")
+    
 
 if __name__ == "__main__":
+    
     train_val_pipeline()
