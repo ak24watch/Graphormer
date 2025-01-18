@@ -2,6 +2,7 @@ from zincdata import ZincDataset
 import dgl
 from phormerModel import Graphormer
 import torch
+from torchsummary import summary
 
 from configuration import Config
 from tqdm import tqdm
@@ -188,6 +189,7 @@ def train_val_pipeline():
     )
 
     model = Graphormer(cfg)
+    summary(model)
   
 
     optimizer = torch.optim.Adam(
