@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch as th
 
+
 class SpatialEncoder(nn.Module):
     """
     Spatial Encoder for encoding shortest path distances.
@@ -9,10 +10,13 @@ class SpatialEncoder(nn.Module):
         max_dist (int): Maximum distance for the shortest path.
         num_heads (int): Number of attention heads.
     """
+
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
-        self.embedding_table = nn.Embedding(cfg.max_num_nodes + 2, cfg.n_heads, padding_idx=0)
+        self.embedding_table = nn.Embedding(
+            cfg.max_num_nodes + 2, cfg.n_heads, padding_idx=0, device=cfg.device
+        )
 
     def forward(self, dist):
         """

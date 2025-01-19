@@ -7,6 +7,7 @@ from encoder import Encoder
 from signet import Signet
 import einops
 
+
 class Graphormer(nn.Module):
     """
     Graphormer model for graph representation learning.
@@ -14,6 +15,7 @@ class Graphormer(nn.Module):
     Args:
         cfg (object): Configuration object containing model parameters.
     """
+
     def __init__(self, cfg):
         super().__init__()
 
@@ -21,49 +23,56 @@ class Graphormer(nn.Module):
         if cfg.pos_emb:
             self.signet = Signet(cfg)
         self.atom_encoder = nn.Embedding(
-            cfg.num_atom_types + 1, cfg.d_model, padding_idx=0
+            cfg.num_atom_types + 1, cfg.d_model, padding_idx=0, device=cfg.device
         )
         if cfg.edge_encoding:
             self.bond_encoder = nn.Embedding(
-                cfg.num_bond_types + 1, cfg.d_model, padding_idx=0
+                cfg.num_bond_types + 1, cfg.d_model, padding_idx=0, device=cfg.device
             )
         self.graph_node_enoceder = nn.Embedding(
-            1,2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
+            1, 2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model, device=cfg.device
         )
         if cfg.deg_emb:
             self.degree_encoder = CentralityEncoder(cfg)
         if cfg.edge_encoding:
             self.path_encoder = EdgeEncoder(cfg)
         self.spatial_encoder = SpatialEncoder(cfg)
-        self.graph_node_virtual_distance_encoder = nn.Embedding(1, cfg.n_heads)
+        self.graph_node_virtual_distance_encoder = nn.Embedding(
+            1, cfg.n_heads, device=cfg.device
+        )
         self.emb_layer_norm = nn.LayerNorm(
-           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
+            2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model, device=cfg.device
         )
 
         self.layers = nn.ModuleList([Encoder(cfg) for _ in range(cfg.n_layers)])
         self.lm_head_transform_weight = nn.Linear(
-           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
-           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+            2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+            2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             bias=False,
+            device=cfg.device,
         )
         self.layer_norm = nn.LayerNorm(
-           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
+            2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+            device=cfg.device,
         )
 
         self.embed_out = nn.Linear(
-           2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
+            2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model,
             cfg.regression_output_dim,
             bias=False,
+            device=cfg.device,
         )
         self.lm_output_learned_bias = nn.Parameter(
-            torch.zeros(cfg.regression_output_dim)
+            torch.zeros((cfg.regression_output_dim), device=cfg.device)
         )
 
     def reset_output_layer_parameters(self):
         """
         Reset the parameters of the output layer.
         """
-        self.lm_output_learned_bias = nn.Parameter(torch.zeros(1))
+        self.lm_output_learned_bias = nn.Parameter(
+            torch.zeros(1, device=self.cfg.device)
+        )
         self.embed_out.reset_parameters()
 
     def forward(
@@ -118,9 +127,7 @@ class Graphormer(nn.Module):
             if self.cfg.add_pos_emb:
                 node_emb += pos_emb
             else:
-                node_emb = torch.cat(
-                    (pos_emb, node_emb), dim=-1
-                )
+                node_emb = torch.cat((pos_emb, node_emb), dim=-1)
         spatial_encoding = self.spatial_encoder(dist)
         if self.cfg.edge_encoding:
             path_encoding = self.path_encoder(dist, path_edata_emb)
@@ -130,6 +137,7 @@ class Graphormer(nn.Module):
             max_num_nodes + 1,
             max_num_nodes + 1,
             self.cfg.n_heads,
+            device=self.cfg.device,
         )
         attn_bias[:, 1:, 1:, :] = (
             path_encoding if self.cfg.edge_encoding else 0
@@ -148,9 +156,7 @@ class Graphormer(nn.Module):
             num_graphs=num_graphs,
         )
 
-        x = torch.cat(
-            (graph_node_emb, node_emb), dim=1
-        )
+        x = torch.cat((graph_node_emb, node_emb), dim=1)
 
         x = self.emb_layer_norm(x)
         for layer in self.layers:

@@ -134,27 +134,11 @@ for epoch in range(num_epochs):
 
 ## Plotting
 
-You can visualize the eigenvectors of a graph using the `plot_eigenvector.py` script. This script uses Plotly to create interactive plots.
 
-```bash
-python plot_eigenvector.py
-```
 
 ## Plots
 
 ### Eigenvector Plot
-
-The `plot_eigenvector.py` script allows you to visualize the eigenvectors of a graph. It generates an interactive plot using Plotly, showing both nodes and edges of the graph with node colors representing eigenvector values.
-
-To run the script and generate the plot, use the following command:
-
-```bash
-python plot_eigenvector.py
-```
-
-The plot will be displayed interactively and saved as a static image named `eigenvector_plot.png`.
-
-![Eigenvector Plot](eigenvector_plot.png)
 
 ## License
 

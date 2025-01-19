@@ -3,6 +3,7 @@ import torch.nn as nn
 from fancy_einsum import einsum
 import einops
 
+
 class EdgeEncoder(nn.Module):
     """
     Edge Encoder for encoding edge features along the shortest path.
@@ -10,11 +11,14 @@ class EdgeEncoder(nn.Module):
     Args:
         cfg (object): Configuration object containing model parameters.
     """
+
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
         self.embedding_table = nn.Embedding(
-            cfg.max_path_length * cfg.n_heads, cfg.d_model
+            cfg.max_path_length * cfg.n_heads,
+            cfg.d_model,
+            device=cfg.device,
         )
 
     def forward(self, dist, path_data):
@@ -35,7 +39,8 @@ class EdgeEncoder(nn.Module):
         edge_embedding = einops.rearrange(
             self.embedding_table.weight,
             "(path_dim n_heads) edge_dim -> path_dim n_heads edge_dim",
-            path_dim=path_dim, n_heads=n_heads
+            path_dim=path_dim,
+            n_heads=n_heads,
         )
 
         path_encodeing = einsum(

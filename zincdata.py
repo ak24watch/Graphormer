@@ -149,12 +149,12 @@ class ZincDataset(torch.utils.data.Dataset):
 
         return (
             torch.stack(labels).reshape(num_graphs, -1),
-            attn_mask,
-            batched_node_feat,
-            batched_eigen_vecs if self.cfg.pos_emb else None,
-            batched_eigen_value if self.cfg.eigenvalue else None,
-            batched_indegree if self.cfg.deg_emb else None,
-            batched_outdegree if self.cfg.deg_emb else None,
-            torch.stack(path_edata_list) if self.cfg.edge_encoding else None,
-            dist,
+            attn_mask.to(self.cfg.device),
+            batched_node_feat.to(self.cfg.device),
+            batched_eigen_vecs.to(self.cfg.device) if self.cfg.pos_emb else None,
+            batched_eigen_value.to(self.cfg.device) if self.cfg.eigenvalue else None,
+            batched_indegree.to(self.cfg.device) if self.cfg.deg_emb else None,
+            batched_outdegree.to(self.cfg.device) if self.cfg.deg_emb else None,
+            torch.stack(path_edata_list).to(self.cfg.device) if self.cfg.edge_encoding else None,
+            dist.to(self.cfg.device),
         )

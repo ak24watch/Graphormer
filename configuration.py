@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import torch.nn as nn
-
+import torch
 @dataclass
 class Config:
     """
@@ -44,6 +44,7 @@ class Config:
         num_valid_samples (int): Number of validation samples.
         num_test_samples (int): Number of test samples.
         out_activation (nn.Module): Activation function for the output layer.
+        device (str): Device to use for training.
     """
     d_model: int = 80
     d_ffn: int = 80
@@ -87,4 +88,5 @@ class Config:
     num_valid_samples: int = 1000
     num_test_samples: int = 1000
     out_activation: nn.Module = nn.ReLU()
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
 

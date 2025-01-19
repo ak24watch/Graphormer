@@ -189,6 +189,7 @@ def train_val_pipeline():
     )
 
     model = Graphormer(cfg)
+    model = model.to(cfg.device)
     summary(model)
   
 
@@ -199,7 +200,7 @@ def train_val_pipeline():
         weight_decay=cfg.weight_decay,
         betas=cfg.betas,
     )
-
+    
     train_losses = []
     val_losses = []
 
