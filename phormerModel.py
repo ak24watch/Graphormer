@@ -18,7 +18,8 @@ class Graphormer(nn.Module):
         super().__init__()
 
         self.cfg = cfg
-        self.signet = Signet(cfg)
+        if cfg.pos_emb:
+            self.signet = Signet(cfg)
         self.atom_encoder = nn.Embedding(
             cfg.num_atom_types + 1, cfg.d_model, padding_idx=0
         )
@@ -29,8 +30,8 @@ class Graphormer(nn.Module):
         self.graph_node_enoceder = nn.Embedding(
             1,2*cfg.d_model if cfg.concat_pos_emb else cfg.d_model
         )
-
-        self.degree_encoder = CentralityEncoder(cfg)
+        if cfg.deg_emb:
+            self.degree_encoder = CentralityEncoder(cfg)
         if cfg.edge_encoding:
             self.path_encoder = EdgeEncoder(cfg)
         self.spatial_encoder = SpatialEncoder(cfg)

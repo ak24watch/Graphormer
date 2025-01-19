@@ -74,9 +74,10 @@ class Config:
     max_path_length: int = 8
     max_dist: int = 8
 
-    train_batch_size: int = 256 * 4
-    valid_batch_size: int = 500
-    test_batch_size: int = 500
+    train_batch_size: int = 256 
+    valid_batch_size: int = 256
+    test_batch_size: int = 256
+    num_workers: int = 0
 
     eps: float = 1e-8
     lr: float = 2e-4

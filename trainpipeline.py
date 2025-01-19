@@ -169,7 +169,7 @@ def train_val_pipeline():
         collate_fn=dataset.collate,
         batch_size=cfg.train_batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=cfg.num_workers,
     )
 
     valid_loader = dgl.dataloading.GraphDataLoader(
@@ -177,7 +177,7 @@ def train_val_pipeline():
         batch_size=cfg.valid_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers=8,
+        num_workers=cfg.num_workers,
     )
 
     test_loader = dgl.dataloading.GraphDataLoader(
@@ -185,7 +185,7 @@ def train_val_pipeline():
         batch_size=cfg.test_batch_size,
         shuffle=False,
         collate_fn=dataset.collate,
-        num_workers=8,
+        num_workers=cfg.num_workers,
     )
 
     model = Graphormer(cfg)

@@ -5,6 +5,7 @@ import dgl
 import dgl.data
 from dgl import LapPE
 
+
 class ZincDataset(torch.utils.data.Dataset):
     """
     ZincDataset class for loading and processing the ZINC dataset.
@@ -21,10 +22,11 @@ class ZincDataset(torch.utils.data.Dataset):
 
     def __init__(self, cfg):
         self.cfg = cfg
-        if cfg.eigenvalue:
-            lap_pe_transform = LapPE(cfg.K, "eigenvec", "eigen_value")
-        else:
-            lap_pe_transform = LapPE(cfg.K, "eigenvec")
+        if cfg.pos_emb:
+            if cfg.eigenvalue:
+                lap_pe_transform = LapPE(cfg.K, "eigenvec", "eigen_value")
+            else:
+                lap_pe_transform = LapPE(cfg.K, "eigenvec")
         train_dataset = dgl.data.ZINCDataset(mode="train")
         valid_dataset = dgl.data.ZINCDataset(mode="valid")
         test_dataset = dgl.data.ZINCDataset(mode="test")
@@ -50,8 +52,8 @@ class ZincDataset(torch.utils.data.Dataset):
                     )
                 else:
                     graph.ndata["spd"] = dgl.shortest_dist(graph)
-
-                lap_pe_transform(graph)
+                if cfg.pos_emb:
+                    lap_pe_transform(graph)
 
                 graph.ndata["feat"] = graph.ndata["feat"].to(torch.long)
                 graph.edata["feat"] = graph.edata["feat"].to(torch.long)
@@ -79,7 +81,8 @@ class ZincDataset(torch.utils.data.Dataset):
             in_degree_list, out_degree_list = [], []
         if self.cfg.edge_encoding:
             path_edata_list = []
-        eigen_vecs_list = []
+        if self.cfg.pos_emb:
+            eigen_vecs_list = []
         if self.cfg.eigenvalue:
             eigen_value_list = []
 
@@ -115,41 +118,40 @@ class ZincDataset(torch.utils.data.Dataset):
                 edata = torch.cat(
                     (edata, torch.zeros((1, edata.shape[1]), dtype=torch.long)), dim=0
                 )
-                path_edata = edata[
-                    path
-                ]
+                path_edata = edata[path]
                 path_edata_list.append(path_edata)
 
             dist[i, : num_nodes[i], : num_nodes[i]] = graphs[i].ndata["spd"]
 
-            if self.cfg.eigenvalue:
-                eigen, eigen_value = (
-                    graphs[i].ndata["eigenvec"],
-                    graphs[i].ndata["eigen_value"],
-                )
-                eigen_vecs_list.append(eigen)
-                eigen_value_list.append(eigen_value)
+            if self.cfg.pos_emb:
+                if self.cfg.eigenvalue:
+                    eigen, eigen_value = (
+                        graphs[i].ndata["eigenvec"],
+                        graphs[i].ndata["eigen_value"],
+                    )
+                    eigen_vecs_list.append(eigen)
+                    eigen_value_list.append(eigen_value)
 
-            else:
-                eigen = graphs[i].ndata["eigenvec"]
-                eigen_vecs_list.append(eigen)
+                else:
+                    eigen = graphs[i].ndata["eigenvec"]
+                    eigen_vecs_list.append(eigen)
 
         batched_node_feat = pad_sequence(node_feat_list, batch_first=True)
+
         if self.cfg.deg_emb:
             batched_indegree = pad_sequence(in_degree_list, batch_first=True)
             batched_outdegree = pad_sequence(out_degree_list, batch_first=True)
 
-        batched_eigen_vecs = pad_sequence(eigen_vecs_list, batch_first=True)
-        if self.cfg.eigenvalue:
-            batched_eigen_value = pad_sequence(
-                eigen_value_list, batch_first=True
-            )
+        if self.cfg.pos_emb:
+            batched_eigen_vecs = pad_sequence(eigen_vecs_list, batch_first=True)
+            if self.cfg.eigenvalue:
+                batched_eigen_value = pad_sequence(eigen_value_list, batch_first=True)
 
         return (
             torch.stack(labels).reshape(num_graphs, -1),
             attn_mask,
             batched_node_feat,
-            batched_eigen_vecs,
+            batched_eigen_vecs if self.cfg.pos_emb else None,
             batched_eigen_value if self.cfg.eigenvalue else None,
             batched_indegree if self.cfg.deg_emb else None,
             batched_outdegree if self.cfg.deg_emb else None,
