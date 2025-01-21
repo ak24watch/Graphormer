@@ -157,7 +157,7 @@ plot_losses(train_losses, val_losses)
 
 ## Plots
 
-### Training and Validation Loss Plot
+### Training and Validation Loss Plot [MAE]
 
 After training the model, the training and validation losses are plotted and saved as `losses_plot.png`.
 
