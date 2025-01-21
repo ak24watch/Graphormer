@@ -150,19 +150,14 @@ def plot_losses(train_losses, val_losses):
     fig.update_layout(title='Training and Validation Loss', xaxis_title='Epoch', yaxis_title='Loss')
     fig.write_image("losses_plot.png")
 
-def train_val_pipeline():
+def train_val_pipeline(dataset, cfg):
     """
     Train and validate the model.
 
     This function initializes the dataset, creates data loaders for training and validation,
     initializes the model and optimizer, and trains the model for a specified number of epochs.
     """
-    cfg = Config()
-    dataset = ZincDataset(cfg=cfg)
 
-    print(f"Number of training samples: {len(dataset.train_samples)}")
-    print(f"Number of validation samples: {len(dataset.valid_samples)}")
-    print(f"Number of test samples: {len(dataset.test_samples)}")
 
     train_loader = dgl.dataloading.GraphDataLoader(
         dataset=dataset.train_samples,
@@ -226,5 +221,10 @@ def train_val_pipeline():
     print(f"Test Loss: {test_loss:.3f}")
 
 if __name__ == "__main__":
-    
-    train_val_pipeline()
+    cfg = Config()
+    dataset = ZincDataset(cfg=cfg)
+
+    print(f"Number of training samples: {len(dataset.train_samples)}")
+    print(f"Number of validation samples: {len(dataset.valid_samples)}")
+    print(f"Number of test samples: {len(dataset.test_samples)}")
+    train_val_pipeline(dataset, cfg)
