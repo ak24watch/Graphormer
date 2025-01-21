@@ -162,6 +162,15 @@ plot_losses(train_losses, val_losses)
 After training the model, the training and validation losses are plotted and saved as `losses_plot.png`.
 
 ![Training and Validation Loss Plot](losses_plot.png)
+
+
+
+## Result output
+
+The result of the model is plotted and saved as `result.png`.
+
+![Result output](result.png)
+
 ### Eigenvector Plot
 
 ## License
