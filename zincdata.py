@@ -50,7 +50,7 @@ class ZincDataset(torch.utils.data.Dataset):
                     graph.ndata["spd"], graph.ndata["path"] = dgl.shortest_dist(
                         graph, return_paths=True
                     )
-                else:
+                elif cfg.space_encoding:
                     graph.ndata["spd"] = dgl.shortest_dist(graph)
                 if cfg.pos_emb:
                     lap_pe_transform(graph)
@@ -85,8 +85,8 @@ class ZincDataset(torch.utils.data.Dataset):
             eigen_vecs_list = []
         if self.cfg.eigenvalue:
             eigen_value_list = []
-        
-        dist = -torch.ones((num_graphs, max_num_nodes, max_num_nodes), dtype=torch.long)
+        if self.cfg.space_encoding:
+            dist = -torch.ones((num_graphs, max_num_nodes, max_num_nodes), dtype=torch.long)
 
         for i in range(num_graphs):
             attn_mask[i, : num_nodes[i] + 1, : num_nodes[i] + 1] = 0
@@ -120,8 +120,8 @@ class ZincDataset(torch.utils.data.Dataset):
                 )
                 path_edata = edata[path]
                 path_edata_list.append(path_edata)
-
-            dist[i, : num_nodes[i], : num_nodes[i]] = graphs[i].ndata["spd"]
+            if self.cfg.space_encoding:
+                dist[i, : num_nodes[i], : num_nodes[i]] = graphs[i].ndata["spd"]
 
             if self.cfg.pos_emb:
                 if self.cfg.eigenvalue:
@@ -156,5 +156,5 @@ class ZincDataset(torch.utils.data.Dataset):
             batched_indegree.to(self.cfg.device) if self.cfg.deg_emb else None,
             batched_outdegree.to(self.cfg.device) if self.cfg.deg_emb else None,
             torch.stack(path_edata_list).to(self.cfg.device) if self.cfg.edge_encoding else None,
-            dist.to(self.cfg.device),
+            dist.to(self.cfg.device) if self.cfg.space_encoding else None,
         )

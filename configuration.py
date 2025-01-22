@@ -57,6 +57,7 @@ class Config:
     ffn_dropout: float = 0.2
     attention_dropout: float = 0.2
     edge_encoding = False
+    space_encoding = False
 
     K: int = 10
     d_signet: int = 80

@@ -36,10 +36,12 @@ class Graphormer(nn.Module):
             self.degree_encoder = CentralityEncoder(cfg)
         if cfg.edge_encoding:
             self.path_encoder = EdgeEncoder(cfg)
-        self.spatial_encoder = SpatialEncoder(cfg)
-        self.graph_node_virtual_distance_encoder = nn.Embedding(
-            1, cfg.n_heads, device=cfg.device
-        )
+        if cfg.space_encoding:
+            self.spatial_encoder = SpatialEncoder(cfg)
+        if cfg.space_encoding:
+            self.graph_node_virtual_distance_encoder = nn.Embedding(
+                1, cfg.n_heads, device=cfg.device
+            )
         self.emb_layer_norm = nn.LayerNorm(
             2 * cfg.d_model if cfg.concat_pos_emb else cfg.d_model, device=cfg.device
         )
@@ -128,29 +130,32 @@ class Graphormer(nn.Module):
                 node_emb = torch.cat((pos_emb, node_emb), dim=-1)
             else:
                 node_emb += pos_emb
-                
-        spatial_encoding = self.spatial_encoder(dist)
+        if self.cfg.space_encoding:
+            spatial_encoding = self.spatial_encoder(dist)
         if self.cfg.edge_encoding:
             path_encoding = self.path_encoder(dist, path_edata_emb)
 
-        attn_bias = torch.zeros(
-            num_graphs,
-            max_num_nodes + 1,
-            max_num_nodes + 1,
-            self.cfg.n_heads,
-            device=self.cfg.device,
-        )
-        attn_bias[:, 1:, 1:, :] = (
-            path_encoding if self.cfg.edge_encoding else 0
-        ) + spatial_encoding
-
-        graph_node_saptial_bias = (
-            self.graph_node_virtual_distance_encoder.weight.reshape(
-                1, 1, self.cfg.n_heads
+        # att bias
+        if self.cfg.space_encoding:
+            attn_bias = torch.zeros(
+                num_graphs,
+                max_num_nodes + 1,
+                max_num_nodes + 1,
+                self.cfg.n_heads,
+                device=self.cfg.device,
             )
-        )
-        attn_bias[:, 1:, 0, :] = attn_bias[:, 1:, 0, :] + graph_node_saptial_bias
-        attn_bias[:, 0, :, :] = attn_bias[:, 0, :, :] + graph_node_saptial_bias
+            attn_bias[:, 1:, 1:, :] = (
+                path_encoding if self.cfg.edge_encoding else 0 + spatial_encoding
+            )
+
+            graph_node_saptial_bias = (
+                self.graph_node_virtual_distance_encoder.weight.reshape(
+                    1, 1, self.cfg.n_heads
+                )
+            )
+            attn_bias[:, 1:, 0, :] = attn_bias[:, 1:, 0, :] + graph_node_saptial_bias
+            attn_bias[:, 0, :, :] = attn_bias[:, 0, :, :] + graph_node_saptial_bias
+
         graph_node_emb = einops.repeat(
             self.graph_node_enoceder.weight,
             "1 d_model -> num_graphs 1 d_model",
@@ -164,7 +169,7 @@ class Graphormer(nn.Module):
             x = layer(
                 x,
                 att_mask=attn_mask,
-                att_bias=attn_bias,
+                att_bias=attn_bias if self.cfg.space_encoding else None,
             )
         graph_rep = x[:, 0, :]
         graph_rep = self.layer_norm(
