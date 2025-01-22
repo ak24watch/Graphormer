@@ -124,10 +124,11 @@ class Graphormer(nn.Module):
 
         if self.cfg.pos_emb:
             pos_emb = self.signet(eigenvecs, eigen_value)
-            if self.cfg.add_pos_emb:
-                node_emb += pos_emb
-            else:
+            if self.cfg.concat_pos_emb:
                 node_emb = torch.cat((pos_emb, node_emb), dim=-1)
+            else:
+                node_emb += pos_emb
+                
         spatial_encoding = self.spatial_encoder(dist)
         if self.cfg.edge_encoding:
             path_encoding = self.path_encoder(dist, path_edata_emb)

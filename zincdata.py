@@ -85,7 +85,7 @@ class ZincDataset(torch.utils.data.Dataset):
             eigen_vecs_list = []
         if self.cfg.eigenvalue:
             eigen_value_list = []
-
+        
         dist = -torch.ones((num_graphs, max_num_nodes, max_num_nodes), dtype=torch.long)
 
         for i in range(num_graphs):

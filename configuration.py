@@ -38,6 +38,7 @@ class Config:
         test_batch_size (int): Batch size for testing.
         eps (float): Epsilon value for the optimizer.
         lr (float): Learning rate.
+        min_lr (float): Minimum learning rate.
         betas (tuple): Betas for the optimizer.
         weight_decay (float): Weight decay for the optimizer.
         num_train_samples (int): Number of training samples.
@@ -45,6 +46,7 @@ class Config:
         num_test_samples (int): Number of test samples.
         out_activation (nn.Module): Activation function for the output layer.
         device (str): Device to use for training.
+        patience (int): Number of epochs with no improvement after which training will be stopped.
     """
     d_model: int = 80
     d_ffn: int = 80
@@ -54,7 +56,7 @@ class Config:
     ffn_activation = nn.GELU()
     ffn_dropout: float = 0.2
     attention_dropout: float = 0.2
-    edge_encoding = True
+    edge_encoding = False
 
     K: int = 10
     d_signet: int = 80
@@ -62,11 +64,11 @@ class Config:
     rho_num_layers: int = 2
     max_eigen_value: int = -1
     eigenvalue: bool = False
-    pos_emb: bool = False
+    pos_emb: bool = True
 
   
-    concat_pos_emb: bool = False
-    deg_emb: bool = True
+    concat_pos_emb: bool = True
+    deg_emb: bool = False
     regression_output_dim: int = 1
     num_bond_types: int = 4
     num_atom_types: int = 28
@@ -75,13 +77,14 @@ class Config:
     max_path_length: int = 8
     max_dist: int = 8
 
-    train_batch_size: int = 500
+    train_batch_size: int = 1000
     valid_batch_size: int = 500
     test_batch_size: int = 500
     num_workers: int = 0
 
     eps: float = 1e-8
-    lr: float = 2e-4
+    lr: float = 1e-3
+    min_lr: float = 0.000001
     betas: tuple = (0.9, 0.999)
     weight_decay: float = 0
     num_train_samples: int = 10000
@@ -89,4 +92,5 @@ class Config:
     num_test_samples: int = 1000
     out_activation: nn.Module = nn.ReLU()
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    patience: int = 20
 

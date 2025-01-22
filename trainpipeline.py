@@ -148,7 +148,7 @@ def plot_losses(train_losses, val_losses):
     fig.add_trace(go.Scatter(y=train_losses, mode='lines', name='Training Loss'))
     fig.add_trace(go.Scatter(y=val_losses, mode='lines', name='Validation Loss'))
     fig.update_layout(title='Training and Validation Loss', xaxis_title='Epoch', yaxis_title='Loss')
-    fig.write_image("losses_plot.png")
+    fig.write_image("lap_pos_concated_losses_plot.png")
 
 def train_val_pipeline(dataset, cfg):
     """
@@ -195,6 +195,10 @@ def train_val_pipeline(dataset, cfg):
         weight_decay=cfg.weight_decay,
         betas=cfg.betas,
     )
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=cfg.patience, min_lr=cfg.min_lr
+    )
     
     train_losses = []
     val_losses = []
@@ -209,6 +213,12 @@ def train_val_pipeline(dataset, cfg):
 
         train_losses.append(epoch_train_loss)
         val_losses.append(epoch_val_loss)
+
+        if cfg.pos_emb:
+            scheduler.step(epoch_val_loss)
+            if optimizer.param_groups[0]['lr'] <= cfg.min_lr:
+                print("Reached minimum learning rate. Stopping training.")
+                break
 
         print(
             f"Epoch={epoch + 1} | train_loss={epoch_train_loss:.3f} | val_loss={epoch_val_loss:.3f}"
