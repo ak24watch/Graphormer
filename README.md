@@ -12,7 +12,6 @@ The model is based on the papers `Do Transformers Really Perform Bad for Graph R
 - [Components](#components)
 - [Model Architecture](#model-architecture)
 - [Training](#training)
-- [Plotting](#plotting)
 - [Plots](#plots)
 - [Result](#Result-Output)
 - [Test MAE](#Test-MAE)
@@ -136,30 +135,6 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-```
-
-## Plotting
-
-To visualize the training and validation losses, you can use the following code snippet to generate and save the plot:
-
-```python
-import matplotlib.pyplot as plt
-
-def plot_losses(train_losses, val_losses, save_path='losses_plot.png'):
-    plt.figure(figsize=(10, 5))
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(val_losses, label='Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.title('Training and Validation Loss')
-    plt.savefig(save_path)
-    plt.show()
-
-# Example usage
-train_losses = [...]  # List of training losses
-val_losses = [...]    # List of validation losses
-plot_losses(train_losses, val_losses)
 ```
 
 ## Plots
