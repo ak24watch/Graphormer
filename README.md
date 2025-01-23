@@ -162,6 +162,9 @@ Due to hardware constraints, the training was limited to 300 epochs. Further tra
 ## Caution
 Do not use K `{ number of eigenvalues or eigenvectors }` more than 10 if using eigenvalues, as it results in NaN eigenvalues if the number of nodes in the graph is smaller than K. You could find the correct K as the graph size varies, or use all eigenvalues by summing `f(v1, ..., vk) = ρ(SUM(φ1(v1), ..., φk(vk)))`.
 
+### train Using 
+run `trainpipeline.py`
+
 ### Eigenvector Plot
 
 ## License
