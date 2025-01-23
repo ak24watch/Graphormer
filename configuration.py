@@ -48,8 +48,8 @@ class Config:
         device (str): Device to use for training.
         patience (int): Number of epochs with no improvement after which training will be stopped.
     """
-    d_model: int = 80
-    d_ffn: int = 80
+    d_model: int = 40
+    d_ffn: int = 40
     d_head: int = 8
     n_heads: int = 10
     n_layers: int = 12
@@ -60,9 +60,9 @@ class Config:
     space_encoding = False
 
     K: int = 10
-    d_signet: int = 80
-    phi_num_layers: int = 2
-    rho_num_layers: int = 2
+    d_signet: int = 40
+    phi_num_layers: int = 8
+    rho_num_layers: int = 4
     max_eigen_value: int = -1
     eigenvalue: bool = False
     pos_emb: bool = True
@@ -87,7 +87,7 @@ class Config:
     lr: float = 1e-3
     min_lr: float = 0.000001
     betas: tuple = (0.9, 0.999)
-    weight_decay: float = 0
+    weight_decay: float = 5e-4
     num_train_samples: int = 10000
     num_valid_samples: int = 1000
     num_test_samples: int = 1000
