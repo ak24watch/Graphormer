@@ -2,7 +2,7 @@
 
 Graphormer is a graph representation learning model designed to encode various graph features, including node centrality, shortest path distances, and eigenvectors/eigenvalues. This repository contains the implementation of the Graphormer model and its components, with sign invariant laplacian postional encoding also included.
 
-The model is based on the papers "Do Transformers Really Perform Bad for Graph Representation?" and "Sign and Basis Invariant Networks for Spectral Graph Representation Learning."
+The model is based on the papers `Do Transformers Really Perform Bad for Graph Representation?` and `Sign and Basis Invariant Networks for Spectral Graph Representation Learning.`
 
 ## Table of Contents
 
