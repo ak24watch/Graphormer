@@ -14,6 +14,9 @@ The model is based on the papers "Do Transformers Really Perform Bad for Graph R
 - [Training](#training)
 - [Plotting](#plotting)
 - [Plots](#plots)
+- [Result](#Result-Output)
+- [Test MAE](#Test-MAE)
+- [caution](#Caution)
 - [License](#license)
 
 ## Installation
@@ -78,9 +81,8 @@ Consists of multi-head attention and feed-forward network layers.
 
 ### SignNet 
 
-SignNet is a new neural architectures that is invariant to key symmetries displayed by eigenvectors: (i) sign flips, since if v is an eigenvector then so is −v.
+SignNet is a new neural architecture that is invariant to key symmetries displayed by eigenvectors: (i) sign flips, since if v is an eigenvector then so is −v.
 Encodes eigenvectors and eigenvalues using rho and phi neural networks `f(v1, ..., vk) = ρ(φ1(v1), ..., φk(vk))`.
-
 
 ## Model Architecture
 
@@ -90,7 +92,7 @@ The Graphormer model consists of several key components:
 - **Bond Encoder**: Embeds edge features (if edge encoding is enabled).
 - **Centrality Encoder**: Encodes node centrality features based on in-degrees and out-degrees.
 - **Spatial Encoder**: Encodes shortest path distances.
-- **Signet**: Encodes eigenvectors and eigenvalues.
+- **SignNet**: Encodes eigenvectors and eigenvalues.
 - **Encoder Layers**: Stacked layers of multi-head attention and feed-forward networks.
 - **Output Layer**: Produces the final graph representation.
 
@@ -100,7 +102,6 @@ The model takes various graph features as input and processes them through these
 
 ## Predictive Model Used
 ![Phormer Model](phormermodel.png)
-
 
 ## Training
 
@@ -136,6 +137,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 ```
+
 ## Plotting
 
 To visualize the training and validation losses, you can use the following code snippet to generate and save the plot:
@@ -168,18 +170,23 @@ After training the model, the training and validation losses are plotted and sav
 
 ![Training and Validation Loss Plot](losses_plot.png)
 
-
-
 ## Result Output
+
+### Not Including Sign Invariant Positional Encoding
 
 The result of the model is plotted and saved as `result.png`.
 
 ![Result Output](result.png)
 
-## Test Results
+## Test MAE
 
 After training the model for 300 epochs, the test Mean Absolute Error (MAE) achieved is **0.222**. The configuration used is defined in `configuration.py`.
 
+Due to hardware constraints, the training was limited to 300 epochs. Further training on more powerful hardware could potentially improve the performance of the model.
+
+## Caution
+
+Do not use K more than 10 if using eigenvalue as it results in NaN eigenvalue if the number of nodes in the graph is smaller than K. You could find the correct K as graph size is varying, or use all eigenvalue by summing `f(v1, ..., vk) = ρ( SUM(φ1(v1), ..., φk(vk)) )`
 
 ### Eigenvector Plot
 
