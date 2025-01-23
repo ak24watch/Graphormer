@@ -79,7 +79,8 @@ Consists of multi-head attention and feed-forward network layers.
 ### SignNet 
 
 SignNet is a new neural architectures that is invariant to key symmetries displayed by eigenvectors: (i) sign flips, since if v is an eigenvector then so is −v.
-Encodes eigenvectors and eigenvalues using a series of linear layers.
+Encodes eigenvectors and eigenvalues using rho and phi neural networks `f(v1, ..., vk) = ρ(φ1(v1), ..., φk(vk))`.
+
 
 ## Model Architecture
 
@@ -96,6 +97,10 @@ The Graphormer model consists of several key components:
 The model takes various graph features as input and processes them through these components to generate a graph representation.
 
 ![Model Architecture](model_arc.png)
+
+## Predictive Model Used
+![Phormer Model](phormermodel.png)
+
 
 ## Training
 
@@ -165,11 +170,16 @@ After training the model, the training and validation losses are plotted and sav
 
 
 
-## Result output
+## Result Output
 
 The result of the model is plotted and saved as `result.png`.
 
-![Result output](result.png)
+![Result Output](result.png)
+
+## Test Results
+
+After training the model for 300 epochs, the test Mean Absolute Error (MAE) achieved is **0.222**. The configuration used is defined in `configuration.py`.
+
 
 ### Eigenvector Plot
 
